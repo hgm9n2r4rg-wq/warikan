@@ -370,8 +370,7 @@
           "/rest/v1/expenses" +
           "?room_code=eq." + encodeURIComponent(ROOM_CODE) +
           "&select=id,amount,paid_by,category,expense_date,memo,created_at" +
-          "&order=expense_date.desc" +
-          "&order=created_at.desc";
+          "&order=expense_date.desc,created_at.desc";
 
         const response = await fetch(url, {
           method: "GET",
