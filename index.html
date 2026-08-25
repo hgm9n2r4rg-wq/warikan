@@ -45,12 +45,14 @@
     .row {
       display: flex;
       justify-content: space-between;
+      gap: 12px;
       margin: 12px 0;
       font-size: 18px;
     }
 
     .amount {
       font-weight: bold;
+      white-space: nowrap;
     }
 
     .settlement {
@@ -84,6 +86,7 @@
 
     textarea {
       min-height: 80px;
+      resize: vertical;
     }
 
     button {
@@ -193,7 +196,7 @@
     <p class="subtitle">つかさとりさの支払いを管理します</p>
 
     <section class="card">
-      <h2 id="monthTitle">今月の支出</h2>
+      <h2 id="totalTitle">累計の支出</h2>
 
       <div class="row">
         <span>つかさが支払った金額</span>
@@ -220,6 +223,7 @@
 
       <form id="expenseForm">
         <label for="amount">金額</label>
+
         <input
           id="amount"
           type="number"
@@ -253,9 +257,7 @@
 
         <p id="paidByError" class="error"></p>
 
-        <div class="field-title">
-          割り勘対象
-        </div>
+        <div class="field-title">割り勘対象</div>
 
         <div class="split-buttons">
           <button
@@ -278,6 +280,7 @@
         <p id="splitError" class="error"></p>
 
         <label for="category">カテゴリ</label>
+
         <select id="category">
           <option value="食費">食費</option>
           <option value="外食">外食</option>
@@ -291,7 +294,10 @@
         <input id="expenseDate" type="date" required>
 
         <label for="memo">メモ（任意）</label>
-        <textarea id="memo"></textarea>
+        <textarea
+          id="memo"
+          placeholder="例：スーパーで買い物"
+        ></textarea>
 
         <button id="saveButton" type="submit">
           支払いを保存する
@@ -310,6 +316,7 @@
 
     <section class="card">
       <h2>支払い履歴</h2>
+
       <div id="history">
         <p class="message">読み込み中です…</p>
       </div>
@@ -361,14 +368,6 @@
       var day = String(now.getDate()).padStart(2, "0");
 
       return year + "-" + month + "-" + day;
-    }
-
-    function monthPrefix() {
-      var now = new Date();
-      var year = now.getFullYear();
-      var month = String(now.getMonth() + 1).padStart(2, "0");
-
-      return year + "-" + month;
     }
 
     function yen(value) {
@@ -429,13 +428,8 @@
       var risaPaid = 0;
       var tsukasaShare = 0;
       var risaShare = 0;
-      var prefix = monthPrefix();
 
       expenses.forEach(function(expense) {
-        if (String(expense.expense_date).indexOf(prefix) !== 0) {
-          return;
-        }
-
         var amount = Number(expense.amount);
 
         if (expense.paid_by === "つかさ") {
@@ -485,8 +479,8 @@
           "精算はありません";
       }
 
-      document.getElementById("monthTitle").textContent =
-        (new Date().getMonth() + 1) + "月の支出";
+      document.getElementById("totalTitle").textContent =
+        "累計の支出";
     }
 
     function updateHistory() {
@@ -533,6 +527,7 @@
         editButton.type = "button";
         editButton.className = "edit-button";
         editButton.textContent = "編集";
+
         editButton.addEventListener("click", function() {
           startEdit(expense.id);
         });
@@ -541,12 +536,14 @@
         deleteButton.type = "button";
         deleteButton.className = "delete-button";
         deleteButton.textContent = "削除";
+
         deleteButton.addEventListener("click", function() {
           deleteExpense(expense.id);
         });
 
         main.appendChild(left);
         main.appendChild(right);
+
         buttons.appendChild(editButton);
         buttons.appendChild(deleteButton);
 
@@ -571,6 +568,7 @@
 
     async function loadExpenses() {
       setStatus("共有データを読み込んでいます…", false);
+
       historyBox.innerHTML =
         '<p class="message">読み込み中です…</p>';
 
@@ -595,10 +593,14 @@
         }
 
         expenses = await response.json();
+
         updateSummary();
         updateHistory();
 
-        setStatus("共有データ：" + expenses.length + "件", false);
+        setStatus(
+          "共有データ：" + expenses.length + "件",
+          false
+        );
       } catch (error) {
         historyBox.innerHTML =
           '<p class="message error">履歴を読み込めませんでした</p>';
@@ -619,6 +621,7 @@
 
       editingId = expense.id;
       selectedPayer = expense.paid_by;
+
       selectedMembers = Array.isArray(expense.split_members)
         ? expense.split_members.slice()
         : ["つかさ", "りさ"];
@@ -745,7 +748,9 @@
 
         if (!response.ok) {
           var errorText = await response.text();
-          throw new Error("保存エラー " + response.status + " " + errorText);
+          throw new Error(
+            "保存エラー " + response.status + " " + errorText
+          );
         }
 
         alert(
