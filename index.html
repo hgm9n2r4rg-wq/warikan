@@ -88,12 +88,12 @@
     button {
       width: 100%;
       margin-top: 16px;
-      padding: 16px;
+      padding: 15px;
       border: none;
       border-radius: 14px;
       background: #007aff;
       color: white;
-      font-size: 18px;
+      font-size: 17px;
       font-weight: bold;
     }
 
@@ -101,8 +101,8 @@
       opacity: 0.5;
     }
 
-    .reload {
-      margin-top: 0;
+    .cancel-button,
+    .reload-button {
       background: #e9e9ed;
       color: #333;
     }
@@ -110,6 +110,10 @@
     .expense {
       padding: 14px 0;
       border-bottom: 1px solid #eee;
+    }
+
+    .expense:last-child {
+      border-bottom: none;
     }
 
     .expense-main {
@@ -123,15 +127,41 @@
       margin-top: 6px;
       color: #666;
       font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .expense-buttons {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .expense-buttons button {
+      margin-top: 0;
+      padding: 9px;
+      font-size: 14px;
+    }
+
+    .edit-button {
+      background: #6c63ff;
+    }
+
+    .delete-button {
+      background: #ff3b30;
     }
 
     .message {
       color: #666;
       text-align: center;
+      line-height: 1.5;
     }
 
     .error {
       color: #c62828;
+    }
+
+    .editing-title {
+      color: #6c63ff;
     }
   </style>
 </head>
@@ -165,11 +195,20 @@
     </section>
 
     <section class="card">
-      <h2>支払いを追加</h2>
+      <h2 id="formTitle">支払いを追加</h2>
 
       <form id="expenseForm">
         <label for="amount">金額</label>
-        <input id="amount" type="number" min="1" step="1" required>
+        <input
+          id="amount"
+          type="number"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          min="1"
+          step="1"
+          placeholder="例：1200"
+          required
+        >
 
         <label for="paidBy">支払った人</label>
         <select id="paidBy">
@@ -191,27 +230,37 @@
         <input id="expenseDate" type="date" required>
 
         <label for="memo">メモ（任意）</label>
-        <textarea id="memo"></textarea>
+        <textarea id="memo" placeholder="例：スーパーで買い物"></textarea>
 
         <button id="saveButton" type="submit">
           支払いを保存する
+        </button>
+
+        <button
+          id="cancelButton"
+          class="cancel-button"
+          type="button"
+          hidden
+        >
+          編集をキャンセル
         </button>
       </form>
     </section>
 
     <section class="card">
       <h2>支払い履歴</h2>
+
       <div id="history">
-        <p class="message">JavaScriptを起動しています…</p>
+        <p class="message">読み込み中です…</p>
       </div>
     </section>
 
-    <button id="reloadButton" class="reload" type="button">
+    <button id="reloadButton" class="reload-button" type="button">
       ↻ 最新のデータを読み込む
     </button>
 
     <p id="status" class="message">
-      JavaScriptを起動しています…
+      データを読み込み中です…
     </p>
   </main>
 
@@ -223,16 +272,22 @@
       "sb_publishable_kIn_cHvDOOeyMOqnQ825bg_YYt_Vlwi";
 
     var ROOM_CODE = "warikan-blue-7391";
+
     var expenses = [];
+    var editingId = null;
 
     var form = document.getElementById("expenseForm");
+    var formTitle = document.getElementById("formTitle");
     var saveButton = document.getElementById("saveButton");
+    var cancelButton = document.getElementById("cancelButton");
     var reloadButton = document.getElementById("reloadButton");
+
     var amountInput = document.getElementById("amount");
     var paidByInput = document.getElementById("paidBy");
     var categoryInput = document.getElementById("category");
     var dateInput = document.getElementById("expenseDate");
     var memoInput = document.getElementById("memo");
+
     var historyBox = document.getElementById("history");
     var statusBox = document.getElementById("status");
 
@@ -241,6 +296,7 @@
       var year = now.getFullYear();
       var month = String(now.getMonth() + 1).padStart(2, "0");
       var day = String(now.getDate()).padStart(2, "0");
+
       return year + "-" + month + "-" + day;
     }
 
@@ -248,6 +304,7 @@
       var now = new Date();
       var year = now.getFullYear();
       var month = String(now.getMonth() + 1).padStart(2, "0");
+
       return year + "-" + month;
     }
 
@@ -257,7 +314,9 @@
 
     function setStatus(text, isError) {
       statusBox.textContent = text;
-      statusBox.className = isError ? "message error" : "message";
+      statusBox.className = isError
+        ? "message error"
+        : "message";
     }
 
     function updateSummary() {
@@ -332,10 +391,35 @@
           expense.expense_date +
           (expense.memo ? "・" + expense.memo : "");
 
+        var buttons = document.createElement("div");
+        buttons.className = "expense-buttons";
+
+        var editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "edit-button";
+        editButton.textContent = "編集";
+        editButton.addEventListener("click", function () {
+          startEdit(expense.id);
+        });
+
+        var deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "delete-button";
+        deleteButton.textContent = "削除";
+        deleteButton.addEventListener("click", function () {
+          deleteExpense(expense.id);
+        });
+
         main.appendChild(left);
         main.appendChild(right);
+
+        buttons.appendChild(editButton);
+        buttons.appendChild(deleteButton);
+
         item.appendChild(main);
         item.appendChild(detail);
+        item.appendChild(buttons);
+
         historyBox.appendChild(item);
       });
     }
@@ -373,21 +457,64 @@
         });
 
         if (!response.ok) {
-          var errorBody = await response.text();
           throw new Error(
-            "読み込みエラー " + response.status + " " + errorBody
+            "読み込みエラー " + response.status
           );
         }
 
         expenses = await response.json();
+
         updateSummary();
         updateHistory();
-        setStatus("共有データ：" + expenses.length + "件", false);
+
+        setStatus(
+          "共有データ：" + expenses.length + "件",
+          false
+        );
       } catch (error) {
         historyBox.innerHTML =
           '<p class="message error">履歴を読み込めませんでした</p>';
+
         setStatus(error.message, true);
       }
+    }
+
+    function startEdit(id) {
+      var expense = expenses.find(function (item) {
+        return String(item.id) === String(id);
+      });
+
+      if (!expense) {
+        alert("編集するデータが見つかりません");
+        return;
+      }
+
+      editingId = expense.id;
+
+      amountInput.value = expense.amount;
+      paidByInput.value = expense.paid_by;
+      categoryInput.value = expense.category;
+      dateInput.value = expense.expense_date;
+      memoInput.value = expense.memo || "";
+
+      formTitle.textContent = "支払いを編集";
+      formTitle.className = "editing-title";
+      saveButton.textContent = "変更を保存する";
+      cancelButton.hidden = false;
+
+      amountInput.focus();
+      window.scrollTo(0, 0);
+    }
+
+    function cancelEdit() {
+      editingId = null;
+      form.reset();
+      dateInput.value = todayText();
+
+      formTitle.textContent = "支払いを追加";
+      formTitle.className = "";
+      saveButton.textContent = "支払いを保存する";
+      cancelButton.hidden = true;
     }
 
     async function saveExpense(event) {
@@ -397,6 +524,7 @@
 
       if (!Number.isInteger(amount) || amount <= 0) {
         alert("1円以上の整数を入力してください");
+        amountInput.focus();
         return;
       }
 
@@ -406,13 +534,16 @@
       }
 
       saveButton.disabled = true;
+      cancelButton.disabled = true;
       saveButton.textContent = "保存中…";
-      setStatus("支払いを保存しています…", false);
 
       try {
-        var response = await fetchWithTimeout(
-          SUPABASE_URL + "/rest/v1/expenses",
-          {
+        var url;
+
+        if (editingId === null) {
+          url = SUPABASE_URL + "/rest/v1/expenses";
+
+          var createResponse = await fetchWithTimeout(url, {
             method: "POST",
             headers: {
               "apikey": SUPABASE_KEY,
@@ -428,35 +559,111 @@
               expense_date: dateInput.value,
               memo: memoInput.value.trim() || null
             })
-          }
-        );
+          });
 
-        if (!response.ok) {
-          var errorBody = await response.text();
-          throw new Error(
-            "保存エラー " + response.status + " " + errorBody
-          );
+          if (!createResponse.ok) {
+            throw new Error(
+              "保存エラー " + createResponse.status
+            );
+          }
+
+          alert("支払いを保存しました");
+        } else {
+          url =
+            SUPABASE_URL +
+            "/rest/v1/expenses" +
+            "?id=eq." + encodeURIComponent(editingId) +
+            "&room_code=eq." + encodeURIComponent(ROOM_CODE);
+
+          var updateResponse = await fetchWithTimeout(url, {
+            method: "PATCH",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": "Bearer " + SUPABASE_KEY,
+              "Content-Type": "application/json",
+              "Prefer": "return=representation"
+            },
+            body: JSON.stringify({
+              amount: amount,
+              paid_by: paidByInput.value,
+              category: categoryInput.value,
+              expense_date: dateInput.value,
+              memo: memoInput.value.trim() || null
+            })
+          });
+
+          if (!updateResponse.ok) {
+            throw new Error(
+              "更新エラー " + updateResponse.status
+            );
+          }
+
+          alert("支払いを更新しました");
         }
 
-        form.reset();
-        dateInput.value = todayText();
+        cancelEdit();
         await loadExpenses();
-        alert("支払いを保存しました");
       } catch (error) {
         setStatus(error.message, true);
-        alert("保存できませんでした。画面下のエラーを確認してください。");
+        alert("保存できませんでした。画面下の表示を確認してください。");
       }
 
       saveButton.disabled = false;
-      saveButton.textContent = "支払いを保存する";
+      cancelButton.disabled = false;
+
+      if (editingId === null) {
+        saveButton.textContent = "支払いを保存する";
+      }
     }
 
-    dateInput.value = todayText();
-    setStatus("JavaScriptは正常に起動しました", false);
+    async function deleteExpense(id) {
+      var answer = confirm(
+        "この支払いを削除しますか？\nこの操作は取り消せません。"
+      );
+
+      if (!answer) {
+        return;
+      }
+
+      try {
+        var url =
+          SUPABASE_URL +
+          "/rest/v1/expenses" +
+          "?id=eq." + encodeURIComponent(id) +
+          "&room_code=eq." + encodeURIComponent(ROOM_CODE);
+
+        var response = await fetchWithTimeout(url, {
+          method: "DELETE",
+          headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + SUPABASE_KEY,
+            "Prefer": "return=representation"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            "削除エラー " + response.status
+          );
+        }
+
+        if (String(editingId) === String(id)) {
+          cancelEdit();
+        }
+
+        await loadExpenses();
+        alert("支払いを削除しました");
+      } catch (error) {
+        setStatus(error.message, true);
+        alert("削除できませんでした。画面下の表示を確認してください。");
+      }
+    }
 
     form.addEventListener("submit", saveExpense);
+    cancelButton.addEventListener("click", cancelEdit);
     reloadButton.addEventListener("click", loadExpenses);
 
+    dateInput.value = todayText();
     loadExpenses();
   </script>
 </body>
