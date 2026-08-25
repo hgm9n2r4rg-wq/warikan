@@ -130,6 +130,7 @@
     .expense-top {
       display: flex;
       justify-content: space-between;
+      gap: 12px;
       font-weight: bold;
     }
 
@@ -137,6 +138,7 @@
       margin-top: 6px;
       color: #666;
       font-size: 14px;
+      line-height: 1.5;
     }
 
     .empty {
@@ -230,7 +232,7 @@
       </div>
     </div>
 
-    <button id="reloadButton" class="sub-button">
+    <button id="reloadButton" class="sub-button" type="button">
       ↻ 最新のデータを読み込む
     </button>
 
@@ -242,12 +244,8 @@
   </div>
 
   <script>
-    const SUPABASE_URL =
-      "https://xecnmugjikwregzbcswy.supabase.co";
-
-    const SUPABASE_KEY =
-      "sb_publishable_kIn_cHvDOOeyMOqnQ825bg_YYt_Vlwi";
-
+    const SUPABASE_URL = "https://xecnmugjikwregzbcswy.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_kIn_cHvDOOeyMOqnQ825bg_YYt_Vlwi";
     const ROOM_CODE = "warikan-blue-7391";
 
     const expenseForm = document.getElementById("expenseForm");
@@ -275,45 +273,48 @@
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, "0");
       const day = String(now.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
+      return year + "-" + month + "-" + day;
+    }
+
+    function getThisMonthPrefix() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      return year + "-" + month;
     }
 
     function formatYen(number) {
-      return `¥${Number(number).toLocaleString()}`;
+      return "¥" + Number(number).toLocaleString();
     }
 
     function escapeHtml(text) {
-      return String(text ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+      return String(text || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
     }
 
     function isThisMonth(dateText) {
-      const today = new Date();
-      const prefix =
-        `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
-
-      return String(dateText).startsWith(prefix);
+      return String(dateText || "").indexOf(getThisMonthPrefix()) === 0;
     }
 
     function updateSummary() {
-      const thisMonthExpenses = expenses.filter(expense =>
-        isThisMonth(expense.expense_date)
-      );
+      const thisMonthExpenses = expenses.filter(function(expense) {
+        return isThisMonth(expense.expense_date);
+      });
 
       let myTotal = 0;
       let otherTotal = 0;
 
-      for (const expense of thisMonthExpenses) {
+      thisMonthExpenses.forEach(function(expense) {
         if (expense.paid_by === "自分") {
           myTotal += Number(expense.amount);
         } else if (expense.paid_by === "相手") {
           otherTotal += Number(expense.amount);
         }
-      }
+      });
 
       const difference = Math.abs(myTotal - otherTotal);
       const settlement = Math.floor(difference / 2);
@@ -323,65 +324,66 @@
       differenceElement.textContent = formatYen(difference);
 
       if (myTotal > otherTotal) {
-        settlementElement.textContent =
-          `相手 → 自分　${formatYen(settlement)}`;
+        settlementElement.textContent = "相手 → 自分　" + formatYen(settlement);
       } else if (otherTotal > myTotal) {
-        settlementElement.textContent =
-          `自分 → 相手　${formatYen(settlement)}`;
+        settlementElement.textContent = "自分 → 相手　" + formatYen(settlement);
       } else {
         settlementElement.textContent = "精算はありません";
       }
 
       const now = new Date();
-      monthTitleElement.textContent =
-        `${now.getMonth() + 1}月の支出`;
+      monthTitleElement.textContent = (now.getMonth() + 1) + "月の支出";
     }
 
     function updateHistory() {
-      if (expenses.length === 0) {
-        historyElement.innerHTML =
-          '<p class="empty">支払い履歴はありません</p>';
+      if (!expenses || expenses.length === 0) {
+        historyElement.innerHTML = '<p class="empty">支払い履歴はありません</p>';
         return;
       }
 
-      historyElement.innerHTML = expenses.map(expense => {
-        const memo = expense.memo
-          ? `・${escapeHtml(expense.memo)}`
-          : "";
+      const html = expenses.map(function(expense) {
+        const memo = expense.memo ? "・" + escapeHtml(expense.memo) : "";
 
-        return `
-          <div class="expense">
-            <div class="expense-top">
-              <span>${escapeHtml(expense.category)}・${escapeHtml(expense.paid_by)}</span>
-              <span>${formatYen(expense.amount)}</span>
-            </div>
-            <div class="expense-detail">
-              ${escapeHtml(expense.expense_date)} ${memo}
-            </div>
-          </div>
-        `;
+        return (
+          '<div class="expense">' +
+            '<div class="expense-top">' +
+              '<span>' + escapeHtml(expense.category) + '・' + escapeHtml(expense.paid_by) + '</span>' +
+              '<span>' + formatYen(expense.amount) + '</span>' +
+            '</div>' +
+            '<div class="expense-detail">' +
+              escapeHtml(expense.expense_date) + ' ' + memo +
+            '</div>' +
+          '</div>'
+        );
       }).join("");
+
+      historyElement.innerHTML = html;
     }
 
     async function loadExpenses() {
       statusElement.textContent = "データを読み込み中です…";
+      historyElement.innerHTML = '<p class="empty">読み込み中です…</p>';
 
       try {
         const url =
-          `${SUPABASE_URL}/rest/v1/expenses` +
-          `?room_code=eq.${encodeURIComponent(ROOM_CODE)}` +
-          `&select=id,amount,paid_by,category,expense_date,memo,created_at` +
-          `&order=expense_date.desc,created_at.desc`;
+          SUPABASE_URL +
+          "/rest/v1/expenses" +
+          "?room_code=eq." + encodeURIComponent(ROOM_CODE) +
+          "&select=id,amount,paid_by,category,expense_date,memo,created_at" +
+          "&order=expense_date.desc" +
+          "&order=created_at.desc";
 
         const response = await fetch(url, {
+          method: "GET",
           headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`
+            "apikey": SUPABASE_KEY,
+            "Authorization": "Bearer " + SUPABASE_KEY
           }
         });
 
         if (!response.ok) {
-          throw new Error("読み込み失敗");
+          const errorText = await response.text();
+          throw new Error(errorText);
         }
 
         expenses = await response.json();
@@ -389,29 +391,12 @@
         updateSummary();
         updateHistory();
 
-        statusElement.textContent =
-          `共有データ：${expenses.length}件`;
+        statusElement.textContent = "共有データ：" + expenses.length + "件";
       } catch (error) {
         console.error(error);
-        statusElement.textContent =
-          "読み込めませんでした。通信状態を確認してください。";
-        historyElement.innerHTML =
-          '<p class="empty">履歴を読み込めませんでした</p>';
+        statusElement.textContent = "読み込めませんでした。設定または通信状態を確認してください。";
+        historyElement.innerHTML = '<p class="empty">履歴を読み込めませんでした</p>';
       }
     }
 
-    async function saveExpense(event) {
-      event.preventDefault();
-
-      const amount = Number(amountInput.value);
-
-      if (!Number.isInteger(amount) || amount <= 0) {
-        alert("金額は1円以上の整数で入力してください");
-        return;
-      }
-
-      saveButton.disabled = true;
-      saveButton.textContent = "保存中…";
-      statusElement.textContent = "Supabaseに保存中です…";
-
-      try {
+    async function saveEx
