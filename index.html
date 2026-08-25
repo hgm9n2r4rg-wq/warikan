@@ -16,31 +16,30 @@
     .app {
       max-width: 480px;
       margin: 0 auto;
-      padding: 24px 16px;
+      padding: 24px 16px 40px;
     }
 
     h1 {
+      margin: 0 0 8px;
       font-size: 26px;
-      margin-bottom: 8px;
     }
 
     .subtitle {
+      margin: 0 0 24px;
       color: #666;
-      margin-bottom: 24px;
     }
 
     .card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
       margin-bottom: 16px;
+      padding: 20px;
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     }
 
     .card h2 {
+      margin: 0 0 16px;
       font-size: 20px;
-      margin-top: 0;
-      margin-bottom: 16px;
     }
 
     .row {
@@ -61,32 +60,46 @@
     .settlement {
       margin-top: 16px;
       padding: 14px;
-      background: #eef6ff;
       border-radius: 12px;
+      background: #eef6ff;
+      color: #0066cc;
       font-weight: bold;
       text-align: center;
-      color: #0066cc;
     }
 
     button {
       width: 100%;
+      margin-bottom: 12px;
+      padding: 16px;
       border: none;
       border-radius: 14px;
-      padding: 16px;
-      font-size: 18px;
-      font-weight: bold;
       background: #007aff;
       color: white;
+      font-size: 18px;
+      font-weight: bold;
     }
 
     button:active {
       background: #005fcc;
     }
 
+    .sub-button {
+      background: #e9e9ed;
+      color: #333;
+    }
+
+    .status {
+      margin: 12px 0 0;
+      color: #666;
+      font-size: 14px;
+      text-align: center;
+    }
+
     .note {
       margin-top: 18px;
       color: #777;
       font-size: 13px;
+      line-height: 1.6;
       text-align: center;
     }
   </style>
@@ -98,7 +111,7 @@
     <p class="subtitle">2人の支払いをかんたんに管理します</p>
 
     <div class="card">
-      <h2>8月の支出</h2>
+      <h2>今月の支出</h2>
 
       <div class="row">
         <span class="label">自分</span>
@@ -121,56 +134,59 @@
     </div>
 
     <button id="addButton">＋ 支払いを追加</button>
+    <button id="reloadButton" class="sub-button">↻ 最新のデータを読み込む</button>
+
+    <p class="status" id="status">データを読み込み中です…</p>
 
     <p class="note">
-      支払いデータは、このiPhone内に保存されます
+      支払いデータは2人で共有されます。<br>
+      「最新のデータを読み込む」で相手の追加分を反映できます。
     </p>
   </div>
 
   <script>
-    const STORAGE_KEY = "warikan-data";
+    /* Supabaseの接続情報 */
+    const SUPABASE_URL = "https://xecnmugjikwregzbcswy.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_kIn_cHvDOOeyMOqnQ825bg_YYt_Vlwi";
+    const ROOM_CODE = "warikan-blue-7391";
 
     const addButton = document.getElementById("addButton");
+    const reloadButton = document.getElementById("reloadButton");
     const myTotalElement = document.getElementById("myTotal");
     const otherTotalElement = document.getElementById("otherTotal");
     const differenceElement = document.getElementById("difference");
     const settlementElement = document.getElementById("settlement");
+    const statusElement = document.getElementById("status");
 
-    let data = loadData();
-
-    function loadData() {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-
-      if (savedData) {
-        return JSON.parse(savedData);
-      }
-
-      return {
-        myTotal: 0,
-        otherTotal: 0
-      };
-    }
-
-    function saveData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    }
+    let expenses = [];
 
     function formatYen(number) {
       return `¥${number.toLocaleString()}`;
     }
 
     function updateScreen() {
-      const difference = Math.abs(data.myTotal - data.otherTotal);
+      let myTotal = 0;
+      let otherTotal = 0;
+
+      for (const expense of expenses) {
+        if (expense.paid_by === "自分") {
+          myTotal += Number(expense.amount);
+        } else if (expense.paid_by === "相手") {
+          otherTotal += Number(expense.amount);
+        }
+      }
+
+      const difference = Math.abs(myTotal - otherTotal);
       const settlement = Math.floor(difference / 2);
 
-      myTotalElement.textContent = formatYen(data.myTotal);
-      otherTotalElement.textContent = formatYen(data.otherTotal);
+      myTotalElement.textContent = formatYen(myTotal);
+      otherTotalElement.textContent = formatYen(otherTotal);
       differenceElement.textContent = formatYen(difference);
 
-      if (data.myTotal > data.otherTotal) {
+      if (myTotal > otherTotal) {
         settlementElement.textContent =
           `相手 → 自分　${formatYen(settlement)}`;
-      } else if (data.otherTotal > data.myTotal) {
+      } else if (otherTotal > myTotal) {
         settlementElement.textContent =
           `自分 → 相手　${formatYen(settlement)}`;
       } else {
@@ -178,7 +194,40 @@
       }
     }
 
-    addButton.addEventListener("click", function () {
+    async function loadExpenses() {
+      statusElement.textContent = "データを読み込み中です…";
+
+      try {
+        const url =
+          `${SUPABASE_URL}/rest/v1/expenses` +
+          `?room_code=eq.${encodeURIComponent(ROOM_CODE)}` +
+          `&select=id,amount,paid_by,created_at` +
+          `&order=created_at.asc`;
+
+        const response = await fetch(url, {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("データの読み込みに失敗しました");
+        }
+
+        expenses = await response.json();
+        updateScreen();
+
+        statusElement.textContent =
+          `共有データ：${expenses.length}件の支払い`;
+      } catch (error) {
+        console.error(error);
+        statusElement.textContent =
+          "読み込めませんでした。通信状態を確認してください。";
+      }
+    }
+
+    async function addExpense() {
       const amountText = prompt("支払った金額を入力してください");
       const amount = Number(amountText);
 
@@ -191,21 +240,51 @@
         "支払った人を入力してください\n「自分」または「相手」"
       );
 
-      if (person === "自分") {
-        data.myTotal += amount;
-      } else if (person === "相手") {
-        data.otherTotal += amount;
-      } else {
+      if (person !== "自分" && person !== "相手") {
         alert("「自分」または「相手」と入力してください");
         return;
       }
 
-      saveData();
-      updateScreen();
-      alert("支払いを保存しました");
-    });
+      addButton.disabled = true;
+      addButton.textContent = "保存中…";
+      statusElement.textContent = "Supabaseに保存中です…";
 
-    updateScreen();
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/expenses`, {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=representation"
+          },
+          body: JSON.stringify({
+            room_code: ROOM_CODE,
+            amount: Math.floor(amount),
+            paid_by: person
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error("保存に失敗しました");
+        }
+
+        alert("支払いを共有データに保存しました");
+        await loadExpenses();
+      } catch (error) {
+        console.error(error);
+        alert("保存できませんでした。通信状態を確認してください。");
+        statusElement.textContent = "保存に失敗しました。";
+      } finally {
+        addButton.disabled = false;
+        addButton.textContent = "＋ 支払いを追加";
+      }
+    }
+
+    addButton.addEventListener("click", addExpense);
+    reloadButton.addEventListener("click", loadExpenses);
+
+    loadExpenses();
   </script>
 </body>
 </html>
