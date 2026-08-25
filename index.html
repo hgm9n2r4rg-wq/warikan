@@ -78,6 +78,10 @@
       background: #007aff;
       color: white;
     }
+
+    button:active {
+      background: #005fcc;
+    }
   </style>
 </head>
 
@@ -91,43 +95,83 @@
 
       <div class="row">
         <span class="label">自分</span>
-        <span class="amount">¥82,400</span>
+        <span class="amount" id="myTotal">¥82,400</span>
       </div>
 
       <div class="row">
         <span class="label">相手</span>
-        <span class="amount">¥51,600</span>
+        <span class="amount" id="otherTotal">¥51,600</span>
       </div>
 
       <div class="row">
         <span class="label">差額</span>
-        <span class="amount">¥30,800</span>
+        <span class="amount" id="difference">¥30,800</span>
       </div>
 
       <div class="settlement">
-        相手 → 自分　¥15,400
+        <span id="settlement">相手 → 自分　¥15,400</span>
       </div>
     </div>
+
     <button id="addButton">＋ 支払いを追加</button>
   </div>
+
   <script>
-  const addButton = document.getElementById("addButton");
+    const addButton = document.getElementById("addButton");
+    const myTotalElement = document.getElementById("myTotal");
+    const otherTotalElement = document.getElementById("otherTotal");
+    const differenceElement = document.getElementById("difference");
+    const settlementElement = document.getElementById("settlement");
 
-  addButton.addEventListener("click", function () {
-    const amount = prompt("支払った金額を入力してください");
+    let myTotal = 82400;
+    let otherTotal = 51600;
 
-    if (!amount) {
-      return;
+    function updateScreen() {
+      const difference = Math.abs(myTotal - otherTotal);
+      const settlement = Math.floor(difference / 2);
+
+      myTotalElement.textContent = `¥${myTotal.toLocaleString()}`;
+      otherTotalElement.textContent = `¥${otherTotal.toLocaleString()}`;
+      differenceElement.textContent = `¥${difference.toLocaleString()}`;
+
+      if (myTotal > otherTotal) {
+        settlementElement.textContent =
+          `相手 → 自分　¥${settlement.toLocaleString()}`;
+      } else if (otherTotal > myTotal) {
+        settlementElement.textContent =
+          `自分 → 相手　¥${settlement.toLocaleString()}`;
+      } else {
+        settlementElement.textContent = "精算はありません";
+      }
     }
 
-    const person = prompt("支払った人を入力してください\n「自分」または「相手」");
+    addButton.addEventListener("click", function () {
+      const amountText = prompt("支払った金額を入力してください");
+      const amount = Number(amountText);
 
-    if (!person) {
-      return;
-    }
+      if (!amountText || isNaN(amount) || amount <= 0) {
+        alert("正しい金額を入力してください");
+        return;
+      }
 
-    alert(`${person}が¥${Number(amount).toLocaleString()}支払いました`);
-  });
-</script>
+      const person = prompt(
+        "支払った人を入力してください\n「自分」または「相手」"
+      );
+
+      if (person === "自分") {
+        myTotal += amount;
+      } else if (person === "相手") {
+        otherTotal += amount;
+      } else {
+        alert("「自分」または「相手」と入力してください");
+        return;
+      }
+
+      updateScreen();
+      alert("支払いを追加しました");
+    });
+
+    updateScreen();
+  </script>
 </body>
 </html>
