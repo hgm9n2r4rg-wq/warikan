@@ -8,14 +8,14 @@
   <style>
     body {
       margin: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
       background: #f5f5f7;
       color: #222;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
     .app {
       max-width: 480px;
-      margin: 0 auto;
+      margin: auto;
       padding: 24px 16px 40px;
     }
 
@@ -33,7 +33,7 @@
       margin-bottom: 16px;
       padding: 20px;
       border-radius: 16px;
-      background: #fff;
+      background: white;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     }
 
@@ -47,10 +47,6 @@
       justify-content: space-between;
       margin: 12px 0;
       font-size: 18px;
-    }
-
-    .label {
-      color: #555;
     }
 
     .amount {
@@ -81,13 +77,12 @@
       padding: 13px;
       border: 1px solid #ccc;
       border-radius: 10px;
-      background: #fff;
+      background: white;
       font-size: 16px;
     }
 
     textarea {
       min-height: 80px;
-      resize: vertical;
     }
 
     button {
@@ -103,19 +98,13 @@
     }
 
     button:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
     }
 
-    .sub-button {
+    .reload {
       margin-top: 0;
       background: #e9e9ed;
       color: #333;
-    }
-
-    .status {
-      color: #666;
-      font-size: 14px;
-      text-align: center;
     }
 
     .expense {
@@ -123,11 +112,7 @@
       border-bottom: 1px solid #eee;
     }
 
-    .expense:last-child {
-      border-bottom: none;
-    }
-
-    .expense-top {
+    .expense-main {
       display: flex;
       justify-content: space-between;
       gap: 12px;
@@ -138,67 +123,56 @@
       margin-top: 6px;
       color: #666;
       font-size: 14px;
-      line-height: 1.5;
     }
 
-    .empty {
-      color: #777;
+    .message {
+      color: #666;
       text-align: center;
     }
 
-    .note {
-      color: #777;
-      font-size: 13px;
-      line-height: 1.6;
-      text-align: center;
+    .error {
+      color: #c62828;
     }
   </style>
 </head>
 
 <body>
-  <div class="app">
+  <main class="app">
     <h1>ふたりの割り勘</h1>
     <p class="subtitle">2人の支払いをかんたんに管理します</p>
 
-    <div class="card">
+    <section class="card">
       <h2 id="monthTitle">今月の支出</h2>
 
       <div class="row">
-        <span class="label">自分</span>
+        <span>自分</span>
         <span class="amount" id="myTotal">¥0</span>
       </div>
 
       <div class="row">
-        <span class="label">相手</span>
+        <span>相手</span>
         <span class="amount" id="otherTotal">¥0</span>
       </div>
 
       <div class="row">
-        <span class="label">差額</span>
+        <span>差額</span>
         <span class="amount" id="difference">¥0</span>
       </div>
 
-      <div class="settlement">
-        <span id="settlement">精算はありません</span>
+      <div class="settlement" id="settlement">
+        精算はありません
       </div>
-    </div>
+    </section>
 
-    <div class="card">
+    <section class="card">
       <h2>支払いを追加</h2>
 
       <form id="expenseForm">
         <label for="amount">金額</label>
-        <input
-          id="amount"
-          type="number"
-          min="1"
-          step="1"
-          placeholder="例：1200"
-          required
-        >
+        <input id="amount" type="number" min="1" step="1" required>
 
         <label for="paidBy">支払った人</label>
-        <select id="paidBy" required>
+        <select id="paidBy">
           <option value="自分">自分</option>
           <option value="相手">相手</option>
         </select>
@@ -210,169 +184,187 @@
           <option value="生活用品">生活用品</option>
           <option value="家具">家具</option>
           <option value="旅行">旅行</option>
-          <option value="その他" selected>その他</option>
+          <option value="その他">その他</option>
         </select>
 
         <label for="expenseDate">日付</label>
         <input id="expenseDate" type="date" required>
 
         <label for="memo">メモ（任意）</label>
-        <textarea id="memo" placeholder="例：スーパーで買い物"></textarea>
+        <textarea id="memo"></textarea>
 
         <button id="saveButton" type="submit">
           支払いを保存する
         </button>
       </form>
-    </div>
+    </section>
 
-    <div class="card">
+    <section class="card">
       <h2>支払い履歴</h2>
       <div id="history">
-        <p class="empty">読み込み中です…</p>
+        <p class="message">JavaScriptを起動しています…</p>
       </div>
-    </div>
+    </section>
 
-    <button id="reloadButton" class="sub-button" type="button">
+    <button id="reloadButton" class="reload" type="button">
       ↻ 最新のデータを読み込む
     </button>
 
-    <p class="status" id="status">データを読み込み中です…</p>
-
-    <p class="note">
-      支払いデータは2人で共有されます。
+    <p id="status" class="message">
+      JavaScriptを起動しています…
     </p>
-  </div>
+  </main>
 
   <script>
-    const SUPABASE_URL = "https://xecnmugjikwregzbcswy.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_kIn_cHvDOOeyMOqnQ825bg_YYt_Vlwi";
-    const ROOM_CODE = "warikan-blue-7391";
+    var SUPABASE_URL =
+      "https://xecnmugjikwregzbcswy.supabase.co";
 
-    const expenseForm = document.getElementById("expenseForm");
-    const saveButton = document.getElementById("saveButton");
-    const reloadButton = document.getElementById("reloadButton");
+    var SUPABASE_KEY =
+      "sb_publishable_kIn_cHvDOOeyMOqnQ825bg_YYt_Vlwi";
 
-    const amountInput = document.getElementById("amount");
-    const paidByInput = document.getElementById("paidBy");
-    const categoryInput = document.getElementById("category");
-    const dateInput = document.getElementById("expenseDate");
-    const memoInput = document.getElementById("memo");
+    var ROOM_CODE = "warikan-blue-7391";
+    var expenses = [];
 
-    const myTotalElement = document.getElementById("myTotal");
-    const otherTotalElement = document.getElementById("otherTotal");
-    const differenceElement = document.getElementById("difference");
-    const settlementElement = document.getElementById("settlement");
-    const historyElement = document.getElementById("history");
-    const statusElement = document.getElementById("status");
-    const monthTitleElement = document.getElementById("monthTitle");
+    var form = document.getElementById("expenseForm");
+    var saveButton = document.getElementById("saveButton");
+    var reloadButton = document.getElementById("reloadButton");
+    var amountInput = document.getElementById("amount");
+    var paidByInput = document.getElementById("paidBy");
+    var categoryInput = document.getElementById("category");
+    var dateInput = document.getElementById("expenseDate");
+    var memoInput = document.getElementById("memo");
+    var historyBox = document.getElementById("history");
+    var statusBox = document.getElementById("status");
 
-    let expenses = [];
-
-    function getToday() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
+    function todayText() {
+      var now = new Date();
+      var year = now.getFullYear();
+      var month = String(now.getMonth() + 1).padStart(2, "0");
+      var day = String(now.getDate()).padStart(2, "0");
       return year + "-" + month + "-" + day;
     }
 
-    function getThisMonthPrefix() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
+    function monthPrefix() {
+      var now = new Date();
+      var year = now.getFullYear();
+      var month = String(now.getMonth() + 1).padStart(2, "0");
       return year + "-" + month;
     }
 
-    function formatYen(number) {
-      return "¥" + Number(number).toLocaleString();
+    function yen(value) {
+      return "¥" + Number(value).toLocaleString("ja-JP");
     }
 
-    function escapeHtml(text) {
-      return String(text || "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    }
-
-    function isThisMonth(dateText) {
-      return String(dateText || "").indexOf(getThisMonthPrefix()) === 0;
+    function setStatus(text, isError) {
+      statusBox.textContent = text;
+      statusBox.className = isError ? "message error" : "message";
     }
 
     function updateSummary() {
-      const thisMonthExpenses = expenses.filter(function(expense) {
-        return isThisMonth(expense.expense_date);
-      });
+      var myTotal = 0;
+      var otherTotal = 0;
+      var prefix = monthPrefix();
 
-      let myTotal = 0;
-      let otherTotal = 0;
+      expenses.forEach(function (expense) {
+        if (String(expense.expense_date).indexOf(prefix) !== 0) {
+          return;
+        }
 
-      thisMonthExpenses.forEach(function(expense) {
         if (expense.paid_by === "自分") {
           myTotal += Number(expense.amount);
-        } else if (expense.paid_by === "相手") {
+        }
+
+        if (expense.paid_by === "相手") {
           otherTotal += Number(expense.amount);
         }
       });
 
-      const difference = Math.abs(myTotal - otherTotal);
-      const settlement = Math.floor(difference / 2);
+      var difference = Math.abs(myTotal - otherTotal);
+      var settlement = Math.floor(difference / 2);
 
-      myTotalElement.textContent = formatYen(myTotal);
-      otherTotalElement.textContent = formatYen(otherTotal);
-      differenceElement.textContent = formatYen(difference);
+      document.getElementById("myTotal").textContent = yen(myTotal);
+      document.getElementById("otherTotal").textContent = yen(otherTotal);
+      document.getElementById("difference").textContent = yen(difference);
 
       if (myTotal > otherTotal) {
-        settlementElement.textContent = "相手 → 自分　" + formatYen(settlement);
+        document.getElementById("settlement").textContent =
+          "相手 → 自分　" + yen(settlement);
       } else if (otherTotal > myTotal) {
-        settlementElement.textContent = "自分 → 相手　" + formatYen(settlement);
+        document.getElementById("settlement").textContent =
+          "自分 → 相手　" + yen(settlement);
       } else {
-        settlementElement.textContent = "精算はありません";
+        document.getElementById("settlement").textContent =
+          "精算はありません";
       }
 
-      const now = new Date();
-      monthTitleElement.textContent = (now.getMonth() + 1) + "月の支出";
+      document.getElementById("monthTitle").textContent =
+        (new Date().getMonth() + 1) + "月の支出";
     }
 
     function updateHistory() {
-      if (!expenses || expenses.length === 0) {
-        historyElement.innerHTML = '<p class="empty">支払い履歴はありません</p>';
+      historyBox.innerHTML = "";
+
+      if (expenses.length === 0) {
+        var empty = document.createElement("p");
+        empty.className = "message";
+        empty.textContent = "支払い履歴はありません";
+        historyBox.appendChild(empty);
         return;
       }
 
-      const html = expenses.map(function(expense) {
-        const memo = expense.memo ? "・" + escapeHtml(expense.memo) : "";
+      expenses.forEach(function (expense) {
+        var item = document.createElement("div");
+        item.className = "expense";
 
-        return (
-          '<div class="expense">' +
-            '<div class="expense-top">' +
-              '<span>' + escapeHtml(expense.category) + '・' + escapeHtml(expense.paid_by) + '</span>' +
-              '<span>' + formatYen(expense.amount) + '</span>' +
-            '</div>' +
-            '<div class="expense-detail">' +
-              escapeHtml(expense.expense_date) + ' ' + memo +
-            '</div>' +
-          '</div>'
-        );
-      }).join("");
+        var main = document.createElement("div");
+        main.className = "expense-main";
 
-      historyElement.innerHTML = html;
+        var left = document.createElement("span");
+        left.textContent =
+          expense.category + "・" + expense.paid_by;
+
+        var right = document.createElement("span");
+        right.textContent = yen(expense.amount);
+
+        var detail = document.createElement("div");
+        detail.className = "expense-detail";
+        detail.textContent =
+          expense.expense_date +
+          (expense.memo ? "・" + expense.memo : "");
+
+        main.appendChild(left);
+        main.appendChild(right);
+        item.appendChild(main);
+        item.appendChild(detail);
+        historyBox.appendChild(item);
+      });
+    }
+
+    function fetchWithTimeout(url, options) {
+      return Promise.race([
+        fetch(url, options),
+        new Promise(function (_, reject) {
+          setTimeout(function () {
+            reject(new Error("通信がタイムアウトしました"));
+          }, 12000);
+        })
+      ]);
     }
 
     async function loadExpenses() {
-      statusElement.textContent = "データを読み込み中です…";
-      historyElement.innerHTML = '<p class="empty">読み込み中です…</p>';
+      setStatus("共有データを読み込んでいます…", false);
+      historyBox.innerHTML =
+        '<p class="message">読み込み中です…</p>';
 
       try {
-        const url =
+        var url =
           SUPABASE_URL +
           "/rest/v1/expenses" +
           "?room_code=eq." + encodeURIComponent(ROOM_CODE) +
           "&select=id,amount,paid_by,category,expense_date,memo,created_at" +
           "&order=expense_date.desc,created_at.desc";
 
-        const response = await fetch(url, {
+        var response = await fetchWithTimeout(url, {
           method: "GET",
           headers: {
             "apikey": SUPABASE_KEY,
@@ -381,21 +373,91 @@
         });
 
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText);
+          var errorBody = await response.text();
+          throw new Error(
+            "読み込みエラー " + response.status + " " + errorBody
+          );
         }
 
         expenses = await response.json();
-
         updateSummary();
         updateHistory();
-
-        statusElement.textContent = "共有データ：" + expenses.length + "件";
+        setStatus("共有データ：" + expenses.length + "件", false);
       } catch (error) {
-        console.error(error);
-        statusElement.textContent = "読み込めませんでした。設定または通信状態を確認してください。";
-        historyElement.innerHTML = '<p class="empty">履歴を読み込めませんでした</p>';
+        historyBox.innerHTML =
+          '<p class="message error">履歴を読み込めませんでした</p>';
+        setStatus(error.message, true);
       }
     }
 
-    async function saveEx
+    async function saveExpense(event) {
+      event.preventDefault();
+
+      var amount = Number(amountInput.value);
+
+      if (!Number.isInteger(amount) || amount <= 0) {
+        alert("1円以上の整数を入力してください");
+        return;
+      }
+
+      if (!dateInput.value) {
+        alert("日付を入力してください");
+        return;
+      }
+
+      saveButton.disabled = true;
+      saveButton.textContent = "保存中…";
+      setStatus("支払いを保存しています…", false);
+
+      try {
+        var response = await fetchWithTimeout(
+          SUPABASE_URL + "/rest/v1/expenses",
+          {
+            method: "POST",
+            headers: {
+              "apikey": SUPABASE_KEY,
+              "Authorization": "Bearer " + SUPABASE_KEY,
+              "Content-Type": "application/json",
+              "Prefer": "return=representation"
+            },
+            body: JSON.stringify({
+              room_code: ROOM_CODE,
+              amount: amount,
+              paid_by: paidByInput.value,
+              category: categoryInput.value,
+              expense_date: dateInput.value,
+              memo: memoInput.value.trim() || null
+            })
+          }
+        );
+
+        if (!response.ok) {
+          var errorBody = await response.text();
+          throw new Error(
+            "保存エラー " + response.status + " " + errorBody
+          );
+        }
+
+        form.reset();
+        dateInput.value = todayText();
+        await loadExpenses();
+        alert("支払いを保存しました");
+      } catch (error) {
+        setStatus(error.message, true);
+        alert("保存できませんでした。画面下のエラーを確認してください。");
+      }
+
+      saveButton.disabled = false;
+      saveButton.textContent = "支払いを保存する";
+    }
+
+    dateInput.value = todayText();
+    setStatus("JavaScriptは正常に起動しました", false);
+
+    form.addEventListener("submit", saveExpense);
+    reloadButton.addEventListener("click", loadExpenses);
+
+    loadExpenses();
+  </script>
+</body>
+</html>
