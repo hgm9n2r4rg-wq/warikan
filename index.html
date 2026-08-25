@@ -63,6 +63,7 @@
       color: #0066cc;
       font-weight: bold;
       text-align: center;
+      font-size: 18px;
     }
 
     label,
@@ -311,18 +312,8 @@
       <h2 id="totalTitle">累計の支出</h2>
 
       <div class="row">
-        <span>つかさが支払った金額</span>
-        <span class="amount" id="tsukasaTotal">¥0</span>
-      </div>
-
-      <div class="row">
-        <span>りさが支払った金額</span>
-        <span class="amount" id="risaTotal">¥0</span>
-      </div>
-
-      <div class="row">
-        <span>差額</span>
-        <span class="amount" id="difference">¥0</span>
+        <span>2人が払った合計金額</span>
+        <span class="amount" id="totalPaid">¥0</span>
       </div>
 
       <div class="settlement" id="settlement">
@@ -440,13 +431,18 @@
     });
 
     function updateSummary() {
+      var totalPaid = 0;
+
       var tsukasaPaid = 0;
       var risaPaid = 0;
+
       var tsukasaShare = 0;
       var risaShare = 0;
 
       expenses.forEach(function(expense) {
         var amount = Number(expense.amount);
+
+        totalPaid += amount;
 
         if (expense.paid_by === "つかさ") {
           tsukasaPaid += amount;
@@ -475,21 +471,15 @@
       var risaBalance = risaPaid - risaShare;
       var settlement = Math.round(Math.abs(tsukasaBalance));
 
-      document.getElementById("tsukasaTotal").textContent =
-        yen(tsukasaPaid);
-
-      document.getElementById("risaTotal").textContent =
-        yen(risaPaid);
-
-      document.getElementById("difference").textContent =
-        yen(Math.abs(tsukasaPaid - risaPaid));
+      document.getElementById("totalPaid").textContent =
+        yen(totalPaid);
 
       if (tsukasaBalance > 0.5) {
         document.getElementById("settlement").textContent =
-          "りさ → つかさ　" + yen(settlement);
+          "精算：りさ → つかさ　" + yen(settlement);
       } else if (risaBalance > 0.5) {
         document.getElementById("settlement").textContent =
-          "つかさ → りさ　" + yen(settlement);
+          "精算：つかさ → りさ　" + yen(settlement);
       } else {
         document.getElementById("settlement").textContent =
           "精算はありません";
