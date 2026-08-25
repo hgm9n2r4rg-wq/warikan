@@ -82,6 +82,13 @@
     button:active {
       background: #005fcc;
     }
+
+    .note {
+      margin-top: 18px;
+      color: #777;
+      font-size: 13px;
+      text-align: center;
+    }
   </style>
 </head>
 
@@ -95,51 +102,77 @@
 
       <div class="row">
         <span class="label">自分</span>
-        <span class="amount" id="myTotal">¥82,400</span>
+        <span class="amount" id="myTotal">¥0</span>
       </div>
 
       <div class="row">
         <span class="label">相手</span>
-        <span class="amount" id="otherTotal">¥51,600</span>
+        <span class="amount" id="otherTotal">¥0</span>
       </div>
 
       <div class="row">
         <span class="label">差額</span>
-        <span class="amount" id="difference">¥30,800</span>
+        <span class="amount" id="difference">¥0</span>
       </div>
 
       <div class="settlement">
-        <span id="settlement">相手 → 自分　¥15,400</span>
+        <span id="settlement">精算はありません</span>
       </div>
     </div>
 
     <button id="addButton">＋ 支払いを追加</button>
+
+    <p class="note">
+      支払いデータは、このiPhone内に保存されます
+    </p>
   </div>
 
   <script>
+    const STORAGE_KEY = "warikan-data";
+
     const addButton = document.getElementById("addButton");
     const myTotalElement = document.getElementById("myTotal");
     const otherTotalElement = document.getElementById("otherTotal");
     const differenceElement = document.getElementById("difference");
     const settlementElement = document.getElementById("settlement");
 
-    let myTotal = 82400;
-    let otherTotal = 51600;
+    let data = loadData();
+
+    function loadData() {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+
+      if (savedData) {
+        return JSON.parse(savedData);
+      }
+
+      return {
+        myTotal: 0,
+        otherTotal: 0
+      };
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function formatYen(number) {
+      return `¥${number.toLocaleString()}`;
+    }
 
     function updateScreen() {
-      const difference = Math.abs(myTotal - otherTotal);
+      const difference = Math.abs(data.myTotal - data.otherTotal);
       const settlement = Math.floor(difference / 2);
 
-      myTotalElement.textContent = `¥${myTotal.toLocaleString()}`;
-      otherTotalElement.textContent = `¥${otherTotal.toLocaleString()}`;
-      differenceElement.textContent = `¥${difference.toLocaleString()}`;
+      myTotalElement.textContent = formatYen(data.myTotal);
+      otherTotalElement.textContent = formatYen(data.otherTotal);
+      differenceElement.textContent = formatYen(difference);
 
-      if (myTotal > otherTotal) {
+      if (data.myTotal > data.otherTotal) {
         settlementElement.textContent =
-          `相手 → 自分　¥${settlement.toLocaleString()}`;
-      } else if (otherTotal > myTotal) {
+          `相手 → 自分　${formatYen(settlement)}`;
+      } else if (data.otherTotal > data.myTotal) {
         settlementElement.textContent =
-          `自分 → 相手　¥${settlement.toLocaleString()}`;
+          `自分 → 相手　${formatYen(settlement)}`;
       } else {
         settlementElement.textContent = "精算はありません";
       }
@@ -149,7 +182,7 @@
       const amountText = prompt("支払った金額を入力してください");
       const amount = Number(amountText);
 
-      if (!amountText || isNaN(amount) || amount <= 0) {
+      if (!amountText || !Number.isFinite(amount) || amount <= 0) {
         alert("正しい金額を入力してください");
         return;
       }
@@ -159,16 +192,17 @@
       );
 
       if (person === "自分") {
-        myTotal += amount;
+        data.myTotal += amount;
       } else if (person === "相手") {
-        otherTotal += amount;
+        data.otherTotal += amount;
       } else {
         alert("「自分」または「相手」と入力してください");
         return;
       }
 
+      saveData();
       updateScreen();
-      alert("支払いを追加しました");
+      alert("支払いを保存しました");
     });
 
     updateScreen();
