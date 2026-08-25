@@ -72,6 +72,12 @@
       font-weight: bold;
     }
 
+    .required-star {
+      margin-left: 4px;
+      color: #ff3b30;
+      font-weight: bold;
+    }
+
     input,
     select,
     textarea {
@@ -196,33 +202,12 @@
     <p class="subtitle">つかさとりさの支払いを管理します</p>
 
     <section class="card">
-      <h2 id="totalTitle">累計の支出</h2>
-
-      <div class="row">
-        <span>つかさが支払った金額</span>
-        <span class="amount" id="tsukasaTotal">¥0</span>
-      </div>
-
-      <div class="row">
-        <span>りさが支払った金額</span>
-        <span class="amount" id="risaTotal">¥0</span>
-      </div>
-
-      <div class="row">
-        <span>差額</span>
-        <span class="amount" id="difference">¥0</span>
-      </div>
-
-      <div class="settlement" id="settlement">
-        精算はありません
-      </div>
-    </section>
-
-    <section class="card">
       <h2 id="formTitle">支払いを追加</h2>
 
       <form id="expenseForm">
-        <label for="amount">金額</label>
+        <label for="amount">
+          金額<span class="required-star">*</span>
+        </label>
 
         <input
           id="amount"
@@ -235,7 +220,9 @@
           required
         >
 
-        <div class="field-title">支払った人</div>
+        <div class="field-title">
+          支払った人<span class="required-star">*</span>
+        </div>
 
         <div class="person-buttons">
           <button
@@ -257,7 +244,9 @@
 
         <p id="paidByError" class="error"></p>
 
-        <div class="field-title">割り勘対象</div>
+        <div class="field-title">
+          割り勘対象<span class="required-star">*</span>
+        </div>
 
         <div class="split-buttons">
           <button
@@ -290,10 +279,14 @@
           <option value="その他">その他</option>
         </select>
 
-        <label for="expenseDate">日付</label>
+        <label for="expenseDate">
+          日付<span class="required-star">*</span>
+        </label>
+
         <input id="expenseDate" type="date" required>
 
         <label for="memo">メモ（任意）</label>
+
         <textarea
           id="memo"
           placeholder="例：スーパーで買い物"
@@ -312,6 +305,29 @@
           編集をキャンセル
         </button>
       </form>
+    </section>
+
+    <section class="card">
+      <h2 id="totalTitle">累計の支出</h2>
+
+      <div class="row">
+        <span>つかさが支払った金額</span>
+        <span class="amount" id="tsukasaTotal">¥0</span>
+      </div>
+
+      <div class="row">
+        <span>りさが支払った金額</span>
+        <span class="amount" id="risaTotal">¥0</span>
+      </div>
+
+      <div class="row">
+        <span>差額</span>
+        <span class="amount" id="difference">¥0</span>
+      </div>
+
+      <div class="settlement" id="settlement">
+        精算はありません
+      </div>
     </section>
 
     <section class="card">
