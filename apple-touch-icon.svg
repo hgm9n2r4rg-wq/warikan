@@ -1,67 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
-  <defs>
-    <linearGradient id="background" x1="20" y1="10" x2="160" y2="170">
-      <stop offset="0" stop-color="#111827"/>
-      <stop offset="0.55" stop-color="#172554"/>
-      <stop offset="1" stop-color="#064E3B"/>
-    </linearGradient>
-
-    <linearGradient id="symbol" x1="48" y1="42" x2="132" y2="140">
-      <stop offset="0" stop-color="#60A5FA"/>
-      <stop offset="0.5" stop-color="#22D3EE"/>
-      <stop offset="1" stop-color="#34D399"/>
-    </linearGradient>
-  </defs>
-
-  <!-- 背景 -->
-  <rect width="180" height="180" rx="40" fill="url(#background)"/>
-
-  <!-- 装飾 -->
-  <circle cx="28" cy="28" r="42" fill="#60A5FA" opacity="0.10"/>
-  <circle cx="155" cy="155" r="52" fill="#34D399" opacity="0.10"/>
-
-  <!-- 中央のプレート -->
-  <rect
-    x="28"
-    y="28"
-    width="124"
-    height="124"
-    rx="34"
-    fill="#FFFFFF"
-    opacity="0.08"
-    stroke="#FFFFFF"
-    stroke-width="2"
-    stroke-opacity="0.15"
-  />
-
-  <!-- 分割を表す左右の丸 -->
-  <circle cx="47" cy="90" r="8" fill="#60A5FA"/>
-  <circle cx="133" cy="90" r="8" fill="#34D399"/>
-
-  <!-- アレンジした円記号 -->
-  <g
-    fill="none"
-    stroke="url(#symbol)"
-    stroke-width="13"
-    stroke-linecap="round"
-    stroke-linejoin="round"
-  >
-    <path d="M55 45 L90 83 L125 45"/>
-    <path d="M90 83 L90 137"/>
-    <path d="M60 91 L120 91"/>
-    <path d="M60 111 L120 111"/>
-  </g>
-
-  <!-- 割り勘を表す中央の切れ目 -->
-  <path
-    d="M90 39 L90 143"
-    stroke="#FFFFFF"
-    stroke-width="3"
-    stroke-linecap="round"
-    stroke-dasharray="3 8"
-    opacity="0.65"
-  />
-
-  <!-- 小さな光 -->
-  <circle cx="55" cy="43" r="4" fill="#FFFFFF" opacity="0.9"/>
+  <rect width="180" height="180" rx="40" fill="#0f172a"/>
+  <circle cx="90" cy="90" r="58" fill="#2563eb"/>
+  <circle cx="90" cy="90" r="42" fill="#ffffff"/>
+  <text x="90" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#0f172a">¥</text>
+  <circle cx="45" cy="45" r="15" fill="#10b981"/>
+  <circle cx="135" cy="135" r="15" fill="#10b981"/>
+  <path d="M57 45 H120" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  <path d="M123 45 L112 35 M123 45 L112 55" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  <path d="M123 135 H60" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  <path d="M57 135 L68 125 M57 135 L68 145" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
 </svg>
