@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
+  <rect width="180" height="180" rx="40" fill="#0f172a"/>
+  <circle cx="90" cy="90" r="58" fill="#2563eb"/>
+  <circle cx="90" cy="90" r="42" fill="#ffffff"/>
+  <text x="90" y="106" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#0f172a">¥</text>
+  <circle cx="45" cy="45" r="15" fill="#10b981"/>
+  <circle cx="135" cy="135" r="15" fill="#10b981"/>
+  <path d="M57 45 H120" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  <path d="M123 45 L112 35 M123 45 L112 55" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  <path d="M123 135 H60" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+  <path d="M57 135 L68 125 M57 135 L68 145" stroke="#10b981" stroke-width="8" stroke-linecap="round"/>
+</svg>
