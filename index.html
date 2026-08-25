@@ -108,8 +108,26 @@
         相手 → 自分　¥15,400
       </div>
     </div>
-
-    <button>＋ 支払いを追加</button>
+    <button id="addButton">＋ 支払いを追加</button>
   </div>
+  <script>
+  const addButton = document.getElementById("addButton");
+
+  addButton.addEventListener("click", function () {
+    const amount = prompt("支払った金額を入力してください");
+
+    if (!amount) {
+      return;
+    }
+
+    const person = prompt("支払った人を入力してください\n「自分」または「相手」");
+
+    if (!person) {
+      return;
+    }
+
+    alert(`${person}が¥${Number(amount).toLocaleString()}支払いました`);
+  });
+</script>
 </body>
 </html>
